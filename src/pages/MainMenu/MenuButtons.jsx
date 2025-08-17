@@ -6,7 +6,7 @@ import React from 'react';
 
 const MenuButtons = ({ onNewGame, onLoadGame, onConfiguration }) => {
     return (
-        <div className="absolute inset-0 flex items-center justify-center lg:justify-start z-20 pt-32 sm:pt-40 md:pt-48 lg:pt-0 lg:left-[5%] lg:top-1/2 lg:transform lg:-translate-y-1/2">
+        <div className="absolute inset-0 flex items-center justify-center lg:justify-start z-20 pt-32 sm:pt-40 md:pt-48 lg:pt-0 lg:left-[12%] lg:top-1/2 lg:transform lg:-translate-y-1/2">
             <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-[280px] mx-auto lg:mx-0 px-4 sm:px-6 md:px-8 lg:px-0">
                 <div className="flex flex-col gap-3 sm:gap-4 md:gap-6 lg:gap-4 items-center lg:items-start animate-[slideInFromLeft_0.8s_ease-out_0.3s_both]">
                     <button 
