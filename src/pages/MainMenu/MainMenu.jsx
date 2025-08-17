@@ -65,7 +65,7 @@ const MainMenu = () => {
             {showMenu && (
                 <>
                     {/* Título en el menú principal */}
-                    <div className="absolute top-12 sm:top-16 md:top-20 lg:top-1/2 left-1/2 lg:left-[60%] transform -translate-x-1/2 lg:-translate-y-1/2 z-10 px-4 w-full lg:w-auto">
+                    <div className="absolute top-12 sm:top-16 md:top-8 lg:top-1/2 left-1/2 lg:left-[60%] transform -translate-x-1/2 lg:-translate-y-1/2 z-10 px-4 w-full lg:w-auto">
                         <h1 className="text-6xl sm:text-8xl md:text-8xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold text-yellow-400 text-center tracking-wider animate-pulse leading-tight">
                             <span className="block lg:inline">Master's</span>
                             <span className="block lg:inline lg:ml-4">Arena</span>
