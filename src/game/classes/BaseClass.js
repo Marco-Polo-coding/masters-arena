@@ -3,7 +3,7 @@
  * para Warrior, Rogue y Mage según el script de Master's Arena
  */
 
-export class BaseClass {
+class BaseClass {
   constructor(classType, name = '') {
     // Identificación
     this.classType = classType
@@ -14,6 +14,7 @@ export class BaseClass {
     this.maxHP = 100
     this.currentHP = 100
     this.baseAttack = 6  // Escalado: 6, 12, 18, 24, 30
+    this.attack = this.baseAttack // Inicializar attack
     this.defense = 10
     this.experience = 0
     this.experienceToNext = 100
@@ -44,6 +45,7 @@ export class BaseClass {
     // Sistema de Initiative
     this.baseInitiative = 10 + this.level * 2  // Escala con nivel
     this.currentInitiative = this.baseInitiative
+    this.initiative = this.currentInitiative // Inicializar initiative
     
     // Inventario básico
     this.potions = 3
@@ -346,6 +348,235 @@ export class BaseClass {
     })
   }
 
+  // ==================== MÉTODOS DE COMPATIBILIDAD ====================
+  
+  // Método para compatibilidad con CombatSystem
+  lightAttack(target) {
+    // Redirigir al método de ataque ligero correcto según la clase
+    if (this.classType === 'warrior') {
+      return this.shieldBash ? this.shieldBash(target) : this.performLightAttack(target);
+    } else if (this.classType === 'rogue') {
+      return this.doubleDaggers ? this.doubleDaggers(target) : this.performLightAttack(target);
+    } else if (this.classType === 'mage') {
+      return this.lightningWhip ? this.lightningWhip(target) : this.performLightAttack(target);
+    }
+    
+    // Fallback a ataque básico
+    return this.performLightAttack(target);
+  }
+
+  // Método para compatibilidad con CombatSystem
+  heavyAttack(target) {
+    // Redirigir al método de ataque pesado correcto según la clase
+    if (this.classType === 'warrior') {
+      return this.mightySwing ? this.mightySwing(target) : this.performHeavyAttack(target);
+    } else if (this.classType === 'rogue') {
+      return this.flurry ? this.flurry(target) : this.performHeavyAttack(target);
+    } else if (this.classType === 'mage') {
+      return this.iceSpikes ? this.iceSpikes(target) : this.performHeavyAttack(target);
+    }
+    
+    // Fallback a ataque pesado básico
+    return this.performHeavyAttack(target);
+  }
+
+  // Método para compatibilidad con CombatSystem
+  defend() {
+    // Redirigir al método de defensa correcto según la clase
+    if (this.classType === 'warrior') {
+      return this.block ? this.block() : this.performDefense();
+    } else if (this.classType === 'rogue') {
+      return this.dodge ? this.dodge() : this.performDefense();
+    } else if (this.classType === 'mage') {
+      return this.mistStep ? this.mistStep() : this.performDefense();
+    }
+    
+    // Fallback a defensa básica
+    return this.performDefense();
+  }
+
+  // Método para compatibilidad con CombatSystem
+  eliteSkill(target, context) {
+    // Redirigir al método elite correcto según la clase
+    if (this.classType === 'warrior') {
+      return this.endure ? this.endure() : { success: false, message: "Elite skill not available" };
+    } else if (this.classType === 'rogue') {
+      if (this.isStealthed && this.backstab) {
+        return this.backstab(target);
+      } else if (this.stealth) {
+        return this.stealth();
+      }
+    } else if (this.classType === 'mage') {
+      return this.firestorm ? this.firestorm(target) : { success: false, message: "Elite skill not available" };
+    }
+    
+    return { success: false, message: "Elite skill not available" };
+  }
+
+  // Método de healing básico  
+  heal() {
+    return this.performHeal();
+  }
+
+  // Métodos base que pueden ser sobrescritos
+  performLightAttack(target) {
+    const damage = this.calculateBasicDamage(this.attack);
+    
+    return {
+      action: 'light_attack',
+      damage: damage,
+      success: true,
+      message: `${this.name} performs a light attack for ${damage} damage!`
+    };
+  }
+
+  performHeavyAttack(target) {
+    if (this.cooldowns.heavy > 0) {
+      return { success: false, message: "Heavy attack is on cooldown!" };
+    }
+
+    const damage = this.calculateBasicDamage(this.attack * 2);
+    this.cooldowns.heavy = 2;
+    
+    return {
+      action: 'heavy_attack',
+      damage: damage,
+      success: true,
+      message: `${this.name} performs a heavy attack for ${damage} damage!`
+    };
+  }
+
+  performDefense() {
+    const mitigation = Math.floor(this.defense * 0.4);
+    
+    return {
+      action: 'defend',
+      mitigation: mitigation,
+      success: true,
+      message: `${this.name} takes a defensive stance!`
+    };
+  }
+
+  performHeal() {
+    if (this.cooldowns.heal > 0) {
+      return { success: false, message: "Heal is on cooldown!" };
+    }
+
+    const healAmount = Math.floor(this.maxHP * 0.3);
+    this.currentHP = Math.min(this.maxHP, this.currentHP + healAmount);
+    this.cooldowns.heal = 2;
+    
+    return {
+      action: 'heal',
+      healAmount: healAmount,
+      success: true,
+      message: `${this.name} heals for ${healAmount} HP!`
+    };
+  }
+
+  // Utilidad para calcular daño básico
+  calculateBasicDamage(baseDamage) {
+    // Variabilidad de daño ±15%
+    const variance = 0.15;
+    const minDamage = Math.floor(baseDamage * (1 - variance));
+    const maxDamage = Math.floor(baseDamage * (1 + variance));
+    return Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
+  }
+
+  // Método para tomar daño (compatible con CombatSystem)
+  takeDamage(amount, source = 'unknown', attacker = null) {
+    let finalDamage = amount;
+    
+    // Aplicar defensa si está en postura defensiva
+    if (this.lastAction === 'defend') {
+      const mitigation = Math.floor(this.defense * 0.4);
+      finalDamage = Math.max(1, amount - mitigation);
+    }
+
+    this.currentHP = Math.max(0, this.currentHP - finalDamage);
+    
+    if (this.currentHP <= 0) {
+      this.isAlive = false;
+    }
+
+    return {
+      damageTaken: finalDamage,
+      currentHP: this.currentHP,
+      isAlive: this.isAlive
+    };
+  }
+
+  // Sistema de status effects (básico)
+  applyStatusEffect(effect, duration, source) {
+    if (!this.statusEffects) this.statusEffects = {};
+    
+    this.statusEffects[effect] = {
+      duration: duration,
+      source: source,
+      appliedTurn: this.turnCount || 0
+    };
+  }
+
+  // Procesar status effects al inicio de turno
+  startTurn() {
+    this.turnCount = (this.turnCount || 0) + 1;
+    
+    // Procesar cooldowns
+    this.tickCooldowns();
+
+    // Procesar status effects
+    return this.processStatusEffects();
+  }
+
+  processStatusEffects() {
+    if (!this.statusEffects) return [];
+    
+    const effects = [];
+    
+    Object.keys(this.statusEffects).forEach(effectName => {
+      const effect = this.statusEffects[effectName];
+      const result = this.processStatusEffect(effectName, effect);
+      if (result) effects.push(result);
+      
+      // Reducir duración
+      effect.duration--;
+      if (effect.duration <= 0) {
+        delete this.statusEffects[effectName];
+      }
+    });
+
+    return effects;
+  }
+
+  processStatusEffect(effectName, effect) {
+    // Procesar efectos básicos
+    switch(effectName) {
+      case 'bleed':
+        const bleedDamage = Math.floor(this.maxHP * 0.05); // 5% HP max
+        this.takeDamage(bleedDamage, 'bleed');
+        return { effect: 'bleed', damage: bleedDamage };
+      
+      case 'burn':
+        const burnDamage = Math.floor(this.attack * 0.3);
+        this.takeDamage(burnDamage, 'burn');
+        return { effect: 'burn', damage: burnDamage };
+      
+      default:
+        return null;
+    }
+  }
+
+  // Propiedades para compatibilidad
+  get isAlive() {
+    return this.currentHP > 0;
+  }
+
+  set isAlive(value) {
+    if (!value) {
+      this.currentHP = 0;
+    }
+  }
+
   // ==================== SISTEMA DE STATUS EFFECTS ====================
   
   /**
@@ -610,3 +841,5 @@ export class BaseClass {
     this.currentInitiative = this.baseInitiative
   }
 }
+
+export default BaseClass;
